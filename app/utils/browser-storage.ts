@@ -15,15 +15,15 @@ localStorage is similar to sessionStorage, except that while localStorage data h
  */
 export class LocalStorageAdapter implements BrowserStorageAdapter {
   async get(key: string) {
-    return window.localStorage.getItem(key);
+    return localStorage.getItem(key);
   }
 
   async set(key: string, value: string) {
-    return window.localStorage.setItem(key, value);
+    return localStorage.setItem(key, value);
   }
 
   async clear() {
-    return window.localStorage.clear();
+    return localStorage.clear();
   }
 }
 
@@ -39,15 +39,15 @@ export class LocalStorageAdapter implements BrowserStorageAdapter {
  */
 export class SessionStorageAdapter implements BrowserStorageAdapter {
   async get(key: string) {
-    return window.sessionStorage.getItem(key);
+    return sessionStorage.getItem(key);
   }
 
   async set(key: string, value: string) {
-    return window.sessionStorage.setItem(key, value);
+    return sessionStorage.setItem(key, value);
   }
 
   async clear() {
-    return window.sessionStorage.clear();
+    return sessionStorage.clear();
   }
 }
 
