@@ -17,6 +17,7 @@ export class KeyManager {
     };
 
     this.storage = this.storageAdapters.session;
+
     usePageContextStore.subscribe(
       state => state.storageType, 
       (storageType) => {
@@ -25,6 +26,7 @@ export class KeyManager {
         this.log('clearing keys in memory');
         this.keys = undefined;
         this.log(`Using "${storageType}" storage`);
+        this.getDisplayablePublicKey();
       }, {
         equalityFn: (a, b) => a === b
       });
@@ -47,6 +49,7 @@ export class KeyManager {
     }
 
     if (!this.keys?.publicKey) {
+      usePageContextStore.setState({ publicKey: undefined });
       return null;
     }
 
@@ -55,6 +58,7 @@ export class KeyManager {
     const exportedAsString = JSON.stringify(exported);
     const exportedAsBase64 = btoa(exportedAsString);
     // task.stop();
+    usePageContextStore.setState({ publicKey: exportedAsBase64 });
     return exportedAsBase64;
   }
  
@@ -77,6 +81,7 @@ export class KeyManager {
     
     this.keys = pair;
     await this.exportKeys();
+    await this.getDisplayablePublicKey();
     genKeyTask.stop();
     return pair;
   }
@@ -127,6 +132,7 @@ export class KeyManager {
     this.log('wiping storage');
     await this.storage.clear();
     this.log('wiped storage');
+    usePageContextStore.setState({ publicKey: undefined });
   }
 
   private async importKeys() {
@@ -161,6 +167,8 @@ export class KeyManager {
       );
       this.keys = { publicKey, privateKey };
       this.log('imported');
+    } else {
+      this.log('no keys found locally');
     }
     task.stop();
   }

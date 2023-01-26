@@ -192,9 +192,9 @@ function StorageSelectionTabs() {
   )
 }
 
-type ButtonProps = DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
+type ButtonProps = { useDiv?: boolean } & DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
 
-function Button(props: ButtonProps) {
+function Button({useDiv, ...props}: ButtonProps) {
   return (
     <button className={cn(
       "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 disabled:opacity-50 dark:focus:ring-neutral-400 disabled:pointer-events-none dark:focus:ring-offset-neutral-900 data-[state=open]:bg-neutral-100 dark:data-[state=open]:bg-neutral-800",
@@ -208,15 +208,17 @@ function Button(props: ButtonProps) {
 
 function IconButton(props: ButtonProps) {
   return (
-    <button className={cn(
-      "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 disabled:opacity-50 dark:focus:ring-neutral-400 disabled:pointer-events-none dark:focus:ring-offset-neutral-900 data-[state=open]:bg-neutral-100 dark:data-[state=open]:bg-neutral-800",
-      "bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:text-neutral-600 dark:hover:text-neutral-100 data-[state=open]:bg-transparent dark:data-[state=open]:bg-transparent",
-      "w-5 h-5"
-    )} {...props}>
+    <button className={IconButton.className} {...props}>
       {props.children}
     </button>
   )
 }
+
+IconButton.className = cn(
+  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 disabled:opacity-50 dark:focus:ring-neutral-400 disabled:pointer-events-none dark:focus:ring-offset-neutral-900 data-[state=open]:bg-neutral-100 dark:data-[state=open]:bg-neutral-800",
+  "bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-100 data-[state=open]:bg-transparent dark:data-[state=open]:bg-transparent",
+  "w-5 h-5"
+);
 
 type TextAreaProps = HTMLProps<HTMLTextAreaElement> & {
   byLine?: string;
@@ -270,21 +272,16 @@ export function SimplifiedAlert(props: SimplifiedAlertProps) {
 
 export function PublicKeyDialog() {
   const context = usePageContext();
-  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const publicKey = usePageContextStore(state => state.publicKey);
   const isInitRef = useRef(false);
 
   useEffect(() => {
-    if (!context.keyManager || isInitRef.current) {
-      return;
+    if (!isInitRef.current && context.keyManager) {
+      isInitRef.current = true;
+      (async () => {
+        await context.keyManager.getDisplayablePublicKey();
+      })()
     }
-
-    isInitRef.current = true;
-    (async () => {
-      const result = await context.keyManager.getDisplayablePublicKey();  
-      if (result) {
-        setPublicKey(result);
-      }
-    })();
   }, [context.keyManager]);
 
   if (!publicKey) {
@@ -293,19 +290,16 @@ export function PublicKeyDialog() {
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger>
-        <IconButton>
-          <Key className="w-4 h-4" />
-        </IconButton>
+      <AlertDialogTrigger className={IconButton.className}>
+         <Key className="w-4 h-4" />
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Your Public Key</AlertDialogTitle>
           <AlertDialogDescription>
             <p className={cn(
-              "hidden md:block",
-              "text-center w-full",
-              "bg-black/40 dark:bg-black/60 text-neutral-400 rounded-md",
+              "w-full",
+              "bg-black/90 dark:bg-black/60 text-neutral-400 rounded-md",
               "overflow-x-hidden break-all",
               "font-mono text-xs",
               "p-4 min-h-[100px]"
