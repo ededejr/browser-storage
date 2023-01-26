@@ -14,7 +14,7 @@ export function Logs() {
     <motion.ul className={cn(
       !logs.length && "hidden",
       "w-full",
-      "bg-black/60 text-white/30",
+      "bg-black/90 dark:bg-black/60 text-white/70 dark:text-white/30",
       "font-mono text-xs",
       "mt-4 p-4",
       "rounded-md",

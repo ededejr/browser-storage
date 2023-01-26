@@ -109,7 +109,7 @@ export default function Index() {
   }, [keyManager]);
 
   return (
-    <main className="mx-auto h-screen flex items-center flex-col justify-center bg-neutral-900">
+    <main className="mx-auto h-screen flex items-center flex-col justify-center bg-neutral-200 dark:bg-neutral-900">
       <div className="w-full max-w-xl">
         <div className="my-4 w-full">
           <StorageSelectionTabs />
@@ -202,7 +202,7 @@ function TextArea({byLine, ...props}: TextAreaProps) {
   return (
     <div className="grid w-full gap-1.5">
       <textarea className={cn(
-        "flex h-20 w-full rounded-md border border-neutral-300 bg-transparent py-2 px-3 text-sm placeholder:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-50 dark:focus:ring-neutral-400 dark:focus:ring-offset-neutral-900"
+        "flex h-20 w-full rounded-md border border-neutral-400 bg-transparent py-2 px-3 text-sm placeholder:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-50 dark:focus:ring-neutral-400 dark:focus:ring-offset-neutral-900"
       )} {...props}>
         {props.children}
       </textarea>
