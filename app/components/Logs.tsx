@@ -5,14 +5,9 @@ import { useLogStore } from "~/utils/store";
 export function Logs() {
   const logs = useLogStore((state) => state.logs);
 
-  if (!logs.length) {
-    return <div className="mt-3 opacity-0 h-[200px] pointer-events-none" />
-  }
-
   return (
     <LayoutGroup>
     <motion.ul className={cn(
-      !logs.length && "hidden",
       "w-full",
       "bg-black/90 dark:bg-black/60 text-white/70 dark:text-white/30",
       "font-mono text-xs",
