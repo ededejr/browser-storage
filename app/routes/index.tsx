@@ -1,4 +1,5 @@
-import { ButtonHTMLAttributes, createContext, DetailedHTMLProps, HTMLProps, useContext} from "react";
+import type { ButtonHTMLAttributes, DetailedHTMLProps, HTMLProps} from "react";
+import { createContext, useContext} from "react";
 import { useEffect} from "react";
 import { useCallback} from "react";
 import { useRef, useState } from "react";
@@ -279,7 +280,7 @@ export function PublicKeyDialog() {
     if (!isInitRef.current && context.keyManager) {
       isInitRef.current = true;
       (async () => {
-        await context.keyManager.getDisplayablePublicKey();
+        await context.keyManager.setPublicKeyState();
       })()
     }
   }, [context.keyManager]);
@@ -296,16 +297,14 @@ export function PublicKeyDialog() {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Your Public Key</AlertDialogTitle>
-          <AlertDialogDescription>
-            <p className={cn(
+          <AlertDialogDescription className={cn(
               "w-full",
               "bg-black/90 dark:bg-black/60 text-neutral-400 rounded-md",
               "overflow-x-hidden break-all",
               "font-mono text-xs",
               "p-4 min-h-[100px]"
             )}>
-              {publicKey}
-            </p>
+            {publicKey}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

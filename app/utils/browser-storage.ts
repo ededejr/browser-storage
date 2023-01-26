@@ -3,8 +3,8 @@ import localforage from "localforage";
 export type BrowserStorageType = 'local' | 'session' | 'indexdb';
 
 export abstract class BrowserStorageAdapter {
-  abstract get(key: string): Promise<string | null>
-  abstract set(key: string, value: string): Promise<void>
+  abstract get(key: string): Promise<string | null> | Promise<CryptoKey | null>;
+  abstract set(key: string, value: string | CryptoKey): Promise<void>
   abstract clear(): Promise<void>
 }
 
@@ -71,11 +71,11 @@ export class IndexDBAdapter implements BrowserStorageAdapter {
   }
 
   async get(key: string) {
-    const result = await this.db.getItem<string>(key);
+    const result = await this.db.getItem<CryptoKey>(key);
     return result ? result : null;
   }
 
-  async set(key: string, value: string) {
+  async set(key: string, value: CryptoKey) {
     await this.db.setItem(key, value);
   }
 

@@ -26,40 +26,36 @@ export class KeyManager {
         this.log('clearing keys in memory');
         this.keys = undefined;
         this.log(`Using "${storageType}" storage`);
-        this.getDisplayablePublicKey();
+        this.setPublicKeyState();
       }, {
         equalityFn: (a, b) => a === b
       });
   }
 
-  private createTask(name: string): { stop: () => void } {
-    const start = performance.now();
-    this.log(`start: ${name}`)
-    return {
-      stop: () => {
-        const end = performance.now();
-        this.log(`end: ${name} (${end - start}ms)`);
-      }
-    };
-  }
-
-  async getDisplayablePublicKey() {    
+  async setPublicKeyState() {    
+    // Attempt to import keys on disk
     if (!this.keys?.publicKey) {
       await this.importKeys();
     }
 
+    // If still no keys on disk, remove from page context
     if (!this.keys?.publicKey) {
       usePageContextStore.setState({ publicKey: undefined });
       return null;
     }
 
-    // const task = this.createTask('get displayable public key');
-    const exported = await crypto.subtle.exportKey('jwk', this.keys.publicKey);
-    const exportedAsString = JSON.stringify(exported);
-    const exportedAsBase64 = btoa(exportedAsString);
-    // task.stop();
-    usePageContextStore.setState({ publicKey: exportedAsBase64 });
-    return exportedAsBase64;
+    let publicKey;
+
+    if (this.IsUsingIndexDB) {
+      publicKey = `The public key is stored in the browser's IndexedDB. It is not available to the page context. You can view it in the browser's IndexedDB inspector.`;
+    } else {
+      const exported = await crypto.subtle.exportKey('jwk', this.keys.publicKey);
+      const exportedAsString = JSON.stringify(exported);
+      const exportedAsBase64 = btoa(exportedAsString);
+      publicKey = exportedAsBase64;
+    }
+
+    usePageContextStore.setState({ publicKey });
   }
  
   async generateKey() {
@@ -75,13 +71,12 @@ export class KeyManager {
         name: "ECDSA",
         namedCurve: "P-384"
       },
-      true,
+      this.IsUsingIndexDB ? false : true,
       ["sign", "verify"]
     );
-    
     this.keys = pair;
     await this.exportKeys();
-    await this.getDisplayablePublicKey();
+    await this.setPublicKeyState();
     genKeyTask.stop();
     return pair;
   }
@@ -144,27 +139,38 @@ export class KeyManager {
     
     if (maybePublicKey && maybePrivateKey) {
       this.log('found keys locally');
-      const publicKey = await crypto.subtle.importKey(
-        "jwk",
-        JSON.parse(maybePublicKey),
-        {
-          name: "ECDSA",
-          namedCurve: "P-384"
-        },
-        true,
-        ["verify"]
-      );
-      
-      const privateKey = await crypto.subtle.importKey(
-        "jwk",
-        JSON.parse(maybePrivateKey),
-        {
-          name: "ECDSA",
-          namedCurve: "P-384"
-        },
-        true,
-        ["sign"]
-      );
+
+      let publicKey: CryptoKey;
+      let privateKey: CryptoKey;
+
+      if (typeof maybePublicKey === 'string' && typeof maybePrivateKey === 'string') {
+        publicKey = await crypto.subtle.importKey(
+          "jwk",
+          JSON.parse(maybePublicKey),
+          {
+            name: "ECDSA",
+            namedCurve: "P-384"
+          },
+          true,
+          ["verify"]
+        );
+        
+        privateKey = await crypto.subtle.importKey(
+          "jwk",
+          JSON.parse(maybePrivateKey),
+          {
+            name: "ECDSA",
+            namedCurve: "P-384"
+          },
+          true,
+          ["sign"]
+        );
+      } else if (maybePublicKey instanceof CryptoKey && maybePrivateKey instanceof CryptoKey) {
+        publicKey = maybePublicKey;
+        privateKey = maybePrivateKey;
+      } else {
+        throw new Error("Invalid key type");
+      }
       this.keys = { publicKey, privateKey };
       this.log('imported');
     } else {
@@ -176,15 +182,38 @@ export class KeyManager {
   private async exportKeys() {
     if (this.keys) {
       const task = this.createTask('export keys');
-      const publicKeyExport = await crypto.subtle.exportKey("jwk", this.keys.publicKey);
-      const privateKeyExport = await crypto.subtle.exportKey("jwk", this.keys.privateKey);
       
-      await Promise.all([
-        this.storage.set("TSE:public:key", JSON.stringify(publicKeyExport)),
-        this.storage.set("TSE:private:key", JSON.stringify(privateKeyExport))
-      ]);
+      if (this.IsUsingIndexDB) {
+        await Promise.all([
+          this.storage.set("TSE:public:key", this.keys.publicKey),
+          this.storage.set("TSE:private:key", this.keys.privateKey),
+        ]);
+      } else {
+        const publicKeyExport = await crypto.subtle.exportKey("jwk", this.keys.publicKey);
+        const privateKeyExport = await crypto.subtle.exportKey("jwk", this.keys.privateKey);
+        
+        await Promise.all([
+          this.storage.set("TSE:public:key", JSON.stringify(publicKeyExport)),
+          this.storage.set("TSE:private:key", JSON.stringify(privateKeyExport))
+        ]);
+      }
 
       task.stop();
     }
+  }
+
+  private createTask(name: string): { stop: () => void } {
+    const start = performance.now();
+    this.log(`start: ${name}`)
+    return {
+      stop: () => {
+        const end = performance.now();
+        this.log(`end: ${name} (${end - start}ms)`);
+      }
+    };
+  }
+
+  private get IsUsingIndexDB() {
+    return this.storage instanceof IndexDBAdapter;
   }
 }
