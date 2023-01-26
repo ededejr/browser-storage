@@ -9,14 +9,14 @@ export class KeyManager {
   private storageAdapters: Record<BrowserStorageType, BrowserStorageAdapter>;
   private storage: BrowserStorageAdapter;
 
-  constructor() {
+  constructor(initialStorageType: BrowserStorageType = 'session') {
     this.storageAdapters = {
       local: new LocalStorageAdapter(),
       session: new SessionStorageAdapter(),
       indexdb: new IndexDBAdapter()
     };
 
-    this.storage = this.storageAdapters.session;
+    this.storage = this.storageAdapters[initialStorageType];
 
     usePageContextStore.subscribe(
       state => state.storageType, 
