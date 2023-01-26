@@ -11,8 +11,7 @@ import {
 import tailwind from "./tailwind.css";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: tailwind },
-  { rel: "icon", href: "https://edede.ca/favicon.ico" }
+  { rel: "stylesheet", href: tailwind }
 ];
 
 export const meta: MetaFunction = () => ({
