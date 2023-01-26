@@ -102,7 +102,7 @@ export class KeyManager {
       encoded
     );
     const buffer = new Uint8Array(signature, 0, 5);
-    const signatureText = `${signature.byteLength} bytes:\n\n${buffer}`;
+    const signatureText = `${signature.byteLength} bytes:\n\n${new TextDecoder("utf-8").decode(buffer)}`;
     task.stop();
     return { signatureText, signature, buffer, encoded }
   }
