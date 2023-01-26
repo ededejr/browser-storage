@@ -15,7 +15,8 @@ export const useLogStore = create<LogStore>((set) => ({
 }));
 
 interface PageContext {
-  storageType: BrowserStorageType
+  storageType: BrowserStorageType;
+  publicKey?: string;
 }
 
 export const usePageContextStore = create<PageContext>()(

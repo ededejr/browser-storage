@@ -40,6 +40,23 @@ export class KeyManager {
       }
     };
   }
+
+  async getDisplayablePublicKey() {    
+    if (!this.keys?.publicKey) {
+      await this.importKeys();
+    }
+
+    if (!this.keys?.publicKey) {
+      return null;
+    }
+
+    // const task = this.createTask('get displayable public key');
+    const exported = await crypto.subtle.exportKey('jwk', this.keys.publicKey);
+    const exportedAsString = JSON.stringify(exported);
+    const exportedAsBase64 = btoa(exportedAsString);
+    // task.stop();
+    return exportedAsBase64;
+  }
  
   async generateKey() {
     await this.importKeys();
@@ -145,7 +162,6 @@ export class KeyManager {
       this.keys = { publicKey, privateKey };
       this.log('imported');
     }
-
     task.stop();
   }
 

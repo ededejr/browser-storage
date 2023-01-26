@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, DetailedHTMLProps, HTMLProps} from "react";
+import { ButtonHTMLAttributes, createContext, DetailedHTMLProps, HTMLProps, useContext} from "react";
 import { useEffect} from "react";
 import { useCallback} from "react";
 import { useRef, useState } from "react";
@@ -17,21 +17,41 @@ import {
 import { useLogStore, usePageContextStore } from "~/utils/store";
 import { Logs } from "~/components/Logs";
 import { Tabs, TabsList, TabsTrigger } from "~/components/Tabs";
-import { Trash } from "lucide-react";
+import { Key, Trash } from "lucide-react";
+import { AlertDialogTrigger } from "@radix-ui/react-alert-dialog";
 
 interface Locals {
   isInitialized: boolean;
-  keyManager: KeyManager;
   signature?: ArrayBuffer, 
   encoded?: BufferSource 
 }
 
-export default function Index() {
+const PageContext = createContext<{keyManager: KeyManager} | null>(null);
+
+function usePageContext() {
+  const context = useContext(PageContext);
+
+  if (!context) {
+    throw new Error("usePageContext must be used within a PageContext.Provider");
+  }
+
+  return context;
+};
+
+export default function PageWithContext() {
+  const keyManager = new KeyManager();
+  return (
+    <PageContext.Provider value={{ keyManager: keyManager }}>
+      <Page />
+    </PageContext.Provider>
+  );
+}
+
+function Page() {
   const locals = useRef<Locals>({
     isInitialized: false,
-    keyManager: new KeyManager()
   });
-  const keyManager = locals.current.keyManager;
+  const keyManager = usePageContext().keyManager;
   const [text, setText] = useState("");
   const [alertContent, setAlertContent] = useState<SimplifiedAlertProps | null>(null);
 
@@ -39,7 +59,6 @@ export default function Index() {
     if (locals.current.isInitialized) {
       return;
     }
-
     const storageType = usePageContextStore.getState().storageType;
     useLogStore.getState().addLog(`using "${storageType}" storage`);
     locals.current.isInitialized = true;
@@ -110,27 +129,32 @@ export default function Index() {
 
   return (
     <main className="mx-auto h-screen flex items-center flex-col justify-center bg-neutral-200 dark:bg-neutral-900">
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-2xl px-4 lg:px-0">
         <div className="my-4 w-full">
           <StorageSelectionTabs />
         </div>
         
-        <div className="my-4 relative">
-          <div className="absolute top-2 right-2">
-            <IconButton onClick={clearKeys}>
-              <Trash  className="w-4 h-4" />
-            </IconButton>
+        <div className="flex flex-row flex-nowrap gap-2 items-center justify-center relative my-4">
+          <div className="relative flex-grow">
+            <div className="absolute top-2 right-2">
+              <div className="flex flex-row gap-1 flex-nowrap">
+                <PublicKeyDialog />
+                <IconButton onClick={clearKeys}>
+                  <Trash  className="w-4 h-4" />
+                </IconButton>
+              </div>
+            </div>
+            <Logs />
           </div>
-          <Logs />
         </div>
 
         <TextArea 
-          value={text}
-          disabled={Boolean(locals.current.signature)}
-          onInput={(e) => setText(e.currentTarget.value)}
-          placeholder="Enter a message to sign"
-          byLine={locals.current.signature ? 'Now you can verify the signed message' : ''}
-        />
+            value={text}
+            disabled={Boolean(locals.current.signature)}
+            onInput={(e) => setText(e.currentTarget.value)}
+            placeholder="Enter a message to sign"
+            byLine={locals.current.signature ? 'Now you can verify the signed message' : ''}
+          />
         <div className="py-4 flex flex-row gap-2 m-auto w-full justify-center items-center">
           <Button onClick={sign} disabled={Boolean(!text.length || (locals.current.signature && locals.current.encoded))}>Sign</Button>
           <Button onClick={verify} disabled={!locals.current.signature}>Verify</Button>
@@ -238,6 +262,60 @@ export function SimplifiedAlert(props: SimplifiedAlertProps) {
           {props.action && (
             <AlertDialogAction onClick={props.action.onClick}>{props.action.text}</AlertDialogAction>
           )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+export function PublicKeyDialog() {
+  const context = usePageContext();
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const isInitRef = useRef(false);
+
+  useEffect(() => {
+    if (!context.keyManager || isInitRef.current) {
+      return;
+    }
+
+    isInitRef.current = true;
+    (async () => {
+      const result = await context.keyManager.getDisplayablePublicKey();  
+      if (result) {
+        setPublicKey(result);
+      }
+    })();
+  }, [context.keyManager]);
+
+  if (!publicKey) {
+    return null;
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger>
+        <IconButton>
+          <Key className="w-4 h-4" />
+        </IconButton>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Your Public Key</AlertDialogTitle>
+          <AlertDialogDescription>
+            <p className={cn(
+              "hidden md:block",
+              "text-center w-full",
+              "bg-black/40 dark:bg-black/60 text-neutral-400 rounded-md",
+              "overflow-x-hidden break-all",
+              "font-mono text-xs",
+              "p-4 min-h-[100px]"
+            )}>
+              {publicKey}
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogAction>Done</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

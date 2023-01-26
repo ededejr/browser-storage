@@ -16,7 +16,7 @@ export function Logs() {
       "w-full",
       "bg-black/90 dark:bg-black/60 text-white/70 dark:text-white/30",
       "font-mono text-xs",
-      "mt-4 p-4",
+      "p-4",
       "rounded-md",
       "h-[200px] overflow-y-scroll",
       "flex flex-col-reverse",
