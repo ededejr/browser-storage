@@ -18,7 +18,6 @@ export function Logs() {
       "font-mono text-xs",
       "mt-4 p-4",
       "rounded-md",
-      "animate-in fade-in",
       "h-[200px] overflow-y-scroll",
       "flex flex-col-reverse",
       "leading-5"
