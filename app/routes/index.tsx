@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, DetailedHTMLProps, HTMLProps} from "react";
-import { createContext, useContext} from "react";
+import React, { createContext, useContext} from "react";
 import { useEffect} from "react";
 import { useCallback} from "react";
 import { useRef, useState } from "react";
@@ -65,6 +65,25 @@ function Page() {
     locals.current.isInitialized = true;
   }, []);
 
+  const resetComponentState = useCallback((ignoreText?: boolean) => {
+    locals.current.signature = undefined;
+    locals.current.encoded = undefined;
+    if (!ignoreText){
+      setText("");
+    }
+    setAlertContent(null);
+  }, []);
+
+  useEffect(() => {
+    return usePageContextStore.subscribe(
+      state => state.storageType,
+      () => {
+        resetComponentState(!(locals.current.signature && locals.current.encoded));
+      }
+    )
+  }, [resetComponentState]);
+
+
   const sign = useCallback(async () => {
     await keyManager.generateKey();
     const { signatureText, signature, encoded } = await keyManager.sign(text);
@@ -86,10 +105,7 @@ function Page() {
         },
         action: {
           onClick: () => {
-            setAlertContent(null);
-            setText("");
-            locals.current.signature = undefined;
-            locals.current.encoded = undefined;
+            resetComponentState();
           },
           text: 'Reset'
         }
@@ -111,7 +127,7 @@ function Page() {
         cancel: { onClick: () => {}, text: 'Close' },
       });
     }
-  }, [keyManager]);
+  }, [keyManager, resetComponentState]);
 
   const clearKeys = useCallback(async () => {
     setAlertContent({
@@ -120,13 +136,10 @@ function Page() {
       cancel: { onClick: () => setAlertContent(null), text: 'Cancel' },
       action: { onClick: async () => {
         await keyManager.clear();
-        locals.current.signature = undefined;
-        locals.current.encoded = undefined;
-        setText("");
-        setAlertContent(null);
+        resetComponentState();
       }, text: 'Continue' }
     })
-  }, [keyManager]);
+  }, [keyManager, resetComponentState]);
 
   return (
     <main className="mx-auto h-screen flex items-center flex-col justify-center bg-neutral-200 dark:bg-neutral-900">
@@ -173,7 +186,7 @@ function Page() {
   );
 }
 
-function StorageSelectionTabs() {
+const StorageSelectionTabs = React.memo(() => {
   const storageType = usePageContextStore((state) => state.storageType);
   const onValueChange = useCallback((value: string) => {
     usePageContextStore.setState({ 
@@ -191,7 +204,7 @@ function StorageSelectionTabs() {
       </TabsList>
     </Tabs>
   )
-}
+});
 
 type ButtonProps = { useDiv?: boolean } & DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
 
